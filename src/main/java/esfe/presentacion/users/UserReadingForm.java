@@ -1,4 +1,4 @@
-package esfe.presentacion;
+package esfe.presentacion.users;
 import esfe.persistencia.UserDAO;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;

@@ -1,4 +1,4 @@
-package esfe.presentacion;
+package esfe.presentacion.users;
 import esfe.dominio.User;
 
 import javax.swing.*;

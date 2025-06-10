@@ -1,4 +1,4 @@
-package esfe.presentacion;
+package esfe.presentacion.users;
 import esfe.persistencia.UserDAO;
 import esfe.utils.CBOption;
 import esfe.utils.CUD;

@@ -1,6 +1,7 @@
-package esfe.presentacion;
+package esfe.presentacion.users;
 import esfe.dominio.User;
 import esfe.persistencia.UserDAO;
+
 import javax.swing.*;
 
 public class ChangePasswordForm extends JDialog {
