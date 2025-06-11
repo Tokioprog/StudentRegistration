@@ -1,4 +1,5 @@
 package esfe.presentacion.users;
+
 import esfe.dominio.User;
 import esfe.persistencia.UserDAO;
 
@@ -10,30 +11,41 @@ public class ChangePasswordForm extends JDialog {
     private JPasswordField txtPassword;
     private JButton btnChangePassword;
 
+    // Instancias necesarias
     private UserDAO userDAO;
     private MainForm mainForm;
 
+    // Constructor del formulario de cambio de contraseña
     public ChangePasswordForm(MainForm mainForm) {
-        this.mainForm = mainForm;
-        userDAO = new UserDAO();
+        this.mainForm = mainForm; // Se guarda una referencia al formulario principal
+        userDAO = new UserDAO(); // Se instancia el DAO de usuarios
+
+        // Se muestra en el campo txtEmail el correo del usuario autenticado
         txtEmail.setText(mainForm.getUserAutenticate().getEmail());
+
+        // Configuración del formulario
         setContentPane(mainPanel);
-        setModal(true);
+        setModal(true); // Bloquea otros formularios hasta cerrar este
         setTitle("Cambiar password");
-        pack();
-        setLocationRelativeTo(mainForm);
+        pack(); // Ajusta el tamaño de la ventana a los componentes
+        setLocationRelativeTo(mainForm); // Centra el formulario respecto al formulario principal
 
-        btnChangePassword.addActionListener(e-> changePassword());
-
+        // Acción del botón para cambiar la contraseña
+        btnChangePassword.addActionListener(e -> changePassword());
     }
-    private void changePassword() {
 
+    // Método que realiza el proceso de cambio de contraseña
+    private void changePassword() {
         try {
+            // Obtiene el usuario actualmente autenticado
             User userAut = mainForm.getUserAutenticate();
+
+            // Se crea un nuevo objeto User solo con el ID y la nueva contraseña
             User user = new User();
             user.setId(userAut.getId());
-            user.setPasswordHash(new String(txtPassword.getPassword()));
+            user.setPasswordHash(new String(txtPassword.getPassword())); // Se obtiene la contraseña del campo
 
+            // Validación: la contraseña no puede estar vacía
             if (user.getPasswordHash().trim().isEmpty()) {
                 JOptionPane.showMessageDialog(null,
                         "La contraseña es obligatoria",
@@ -41,22 +53,25 @@ public class ChangePasswordForm extends JDialog {
                 return;
             }
 
+            // Llama al DAO para actualizar la contraseña
             boolean res = userDAO.updatePassword(user);
 
             if (res) {
-                this.dispose();
-                LoginForm loginForm = new LoginForm(this.mainForm);
+                // Si fue exitosa, se cierra este formulario y se muestra el de login
+                this.dispose(); // Cierra el formulario actual
+                LoginForm loginForm = new LoginForm(this.mainForm); // Muestra nuevamente el login
                 loginForm.setVisible(true);
             } else {
+                // Si no se logró actualizar la contraseña
                 JOptionPane.showMessageDialog(null,
-                        "No se logro cambiar la contraseña",
+                        "No se logró cambiar la contraseña",
                         "Cambiar contraseña", JOptionPane.WARNING_MESSAGE);
             }
         } catch (Exception ex) {
+            // Captura y muestra cualquier excepción inesperada
             JOptionPane.showMessageDialog(null,
                     ex.getMessage(),
                     "Sistema", JOptionPane.ERROR_MESSAGE);
         }
-
     }
 }
