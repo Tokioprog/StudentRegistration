@@ -1,19 +1,33 @@
 package esfe.utils;
 
+import esfe.dominio.Career; // Necesitas importar tu clase Career aquí
+
 public class CBOption {
     private String displayText;
-    private Object value;
+    private int value; // Cambiado a int para ser consistente con careerId
 
-    public CBOption(String displayText, Object value) {
+    // Constructor existente (útil si quieres crear CBOptions directamente con un String y un int)
+    public CBOption(String displayText, int value) { // Modificado a int
         this.displayText = displayText;
         this.value = value;
+    }
+
+    // Nuevo constructor: para cuando creas un CBOption a partir de un objeto Career
+    public CBOption(Career career) {
+        if (career != null) {
+            this.displayText = career.getCareerName();
+            this.value = career.getCareerId();
+        } else {
+            this.displayText = ""; // O un valor por defecto como "-- Seleccione --"
+            this.value = 0; // O un valor que indique "ninguna selección"
+        }
     }
 
     public String getDisplayText() {
         return displayText;
     }
 
-    public Object getValue() {
+    public int getValue() { // Cambiado a int
         return value;
     }
 
@@ -21,32 +35,20 @@ public class CBOption {
     public String toString() {
         return displayText; // Esto es lo que se mostrará en el JComboBox
     }
+
     @Override
     public boolean equals(Object obj) {
-        // Verifica si el objeto con el que se está comparando es nulo.
-        // Si es nulo, no puede ser igual a esta instancia, por lo tanto, retorna falso.
-        if (obj == null) {
-            return false;
-        }
-        // Verifica si el objeto con el que se está comparando pertenece a una clase diferente.
-        // Si las clases no son las mismas, los objetos no pueden ser iguales, por lo tanto, retorna falso.
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        // Realiza un casting del objeto genérico 'obj' a la clase específica 'CBOption'
-        // para poder acceder a sus atributos y métodos.
-        final CBOption other = (CBOption) obj;
-        // Compara el valor del atributo 'value' de esta instancia con el valor del atributo 'value'
-        // del objeto 'other'. Si los valores no son iguales, los objetos no son iguales,
-        // por lo tanto, retorna falso.
-        if (this.getValue() != other.getValue()) {
-            return false;
-        }
-        // Si todas las verificaciones anteriores pasan (el objeto no es nulo, pertenece a la misma
-        // clase y el valor del atributo 'value' es el mismo), entonces los objetos se consideran iguales
-        // y se retorna verdadero. En este caso, la igualdad se basa únicamente en el valor del
-        // atributo 'value'. Si la clase 'CBOption' tiene más atributos relevantes para la igualdad,
-        // también deberían compararse aquí.
-        return true;
+        // Optimizado para ser más robusto y común en Java
+        if (this == obj) return true; // Si es la misma instancia
+        if (obj == null || getClass() != obj.getClass()) return false; // Si es nulo o de otra clase
+
+        CBOption other = (CBOption) obj; // Casting seguro
+        return value == other.value; // Compara los valores enteros directamente
+    }
+
+    @Override
+    public int hashCode() {
+        // Es una buena práctica sobrescribir hashCode cuando se sobrescribe equals
+        return Integer.hashCode(value);
     }
 }

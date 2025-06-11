@@ -57,4 +57,9 @@ public class Students {
     public void setCareer(Career career) {
         this.career = career;
     }
+
+    @Override
+    public String toString() {
+        return fullName + " (" + code + ")";
+    }
 }

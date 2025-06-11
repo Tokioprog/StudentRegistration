@@ -1,6 +1,7 @@
 package esfe.presentacion.users;
 import esfe.dominio.User;
 import esfe.presentacion.careers.CareerReadingForm;
+import esfe.presentacion.students.StudentReadingForm;
 
 import javax.swing.*;
 
@@ -64,6 +65,12 @@ public class MainForm extends JFrame {
         itemCareers.addActionListener(e -> {
             CareerReadingForm careerReadingForm = new CareerReadingForm(this);
             careerReadingForm.setVisible(true);
+        });
+        JMenuItem itemStudents = new JMenuItem("Estudiantes");
+        menuMantenimiento.add(itemStudents);
+        itemStudents.addActionListener(e -> {
+            StudentReadingForm studentReadingForm = new StudentReadingForm(this);
+            studentReadingForm.setVisible(true);
         });
     }
 }

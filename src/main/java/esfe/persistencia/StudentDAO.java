@@ -10,7 +10,6 @@ import esfe.dominio.Students;
 
 public class StudentDAO {
     private ConnectionManager conn;
-
     public StudentDAO() {
         conn = ConnectionManager.getInstance();
     }

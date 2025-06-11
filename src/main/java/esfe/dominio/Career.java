@@ -27,4 +27,9 @@ public class Career {
     public void setCareerName(String careerName) {
         this.careerName = careerName;
     }
+
+    @Override
+    public String toString() {
+        return careerName;
+    }
 }
