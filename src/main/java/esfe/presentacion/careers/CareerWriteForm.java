@@ -3,10 +3,12 @@ package esfe.presentacion.careers;
 import esfe.dominio.Career;
 import esfe.persistencia.CareerDAO;
 import esfe.presentacion.users.MainForm;
-import esfe.utils.CBOption;
 import esfe.utils.CUD;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
+import java.awt.*;
 
 public class CareerWriteForm extends JDialog {
     private JTextField txtName;
@@ -14,42 +16,93 @@ public class CareerWriteForm extends JDialog {
     private JButton btnCancel;
     private JPanel mainPanel;
 
-    private CareerDAO careerDAO;     // DAO para interactuar con la base de datos
-    private MainForm mainForm;       // Referencia al formulario principal
-    private CUD cud;                 // Indica la operación: CREATE, UPDATE, DELETE
-    private Career en;               // Objeto Career sobre el que se realizará la acción
+    private CareerDAO careerDAO;
+    private MainForm mainForm;
+    private CUD cud;
+    private Career en;
 
-    // Constructor
     public CareerWriteForm(MainForm mainForm, CUD cud, Career career) {
         this.cud = cud;
         this.en = career;
         this.mainForm = mainForm;
-        this.careerDAO = new CareerDAO(); // Instancia el DAO para carreras
+        this.careerDAO = new CareerDAO();
 
-        // Configuración del formulario
         setContentPane(mainPanel);
         setModal(true);
-        init();                      // Inicializa la vista y los datos
-        pack();                      // Ajusta el tamaño
-        setLocationRelativeTo(mainForm); // Centra respecto al formulario principal
+        setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        setSize(400, 200);
+        setResizable(false);
+        init();
+        setLocationRelativeTo(mainForm);
 
-        // Acción para botón Cancelar
+        // --- APLICACIÓN DE ESTILOS Y MEJORAS VISUALES ---
+        applyVisualEnhancements();
+
         btnCancel.addActionListener(s -> this.dispose());
-
-        // Acción para botón OK (Guardar o Eliminar)
         btnOk.addActionListener(s -> ok());
     }
 
-    // Inicializa el formulario según la operación a realizar
+    private void applyVisualEnhancements() {
+        mainPanel.setBackground(new Color(245, 245, 250));
+        mainPanel.setBorder(new EmptyBorder(25, 30, 25, 30));
+
+        Font textFieldFont = new Font("Arial", Font.PLAIN, 16);
+        Color borderColor = new Color(150, 150, 200);
+        int borderWidth = 1;
+
+        txtName.setFont(textFieldFont);
+        txtName.setBorder(new LineBorder(borderColor, borderWidth, true));
+        txtName.setPreferredSize(new Dimension(280, 38));
+        txtName.setBackground(Color.WHITE);
+
+        Font buttonFont = new Font("Segoe UI", Font.BOLD, 15);
+        Dimension buttonSize = new Dimension(120, 40);
+
+        btnOk.setFont(buttonFont);
+        btnOk.setForeground(Color.WHITE);
+        btnOk.setFocusPainted(false);
+        btnOk.setPreferredSize(buttonSize);
+        btnOk.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+
+        if (this.cud == CUD.DELETE) {
+            btnOk.setBackground(new Color(200, 70, 70));
+            btnOk.addMouseListener(new java.awt.event.MouseAdapter() {
+                public void mouseEntered(java.awt.event.MouseEvent evt) { btnOk.setBackground(new Color(220, 90, 90)); }
+                public void mouseExited(java.awt.event.MouseEvent evt) { btnOk.setBackground(new Color(200, 70, 70)); }
+            });
+        } else {
+            btnOk.setBackground(new Color(60, 179, 113));
+            btnOk.addMouseListener(new java.awt.event.MouseAdapter() {
+                public void mouseEntered(java.awt.event.MouseEvent evt) { btnOk.setBackground(new Color(80, 199, 133)); }
+                public void mouseExited(java.awt.event.MouseEvent evt) { btnOk.setBackground(new Color(60, 179, 113)); }
+            });
+        }
+
+        btnCancel.setFont(buttonFont);
+        btnCancel.setBackground(new Color(150, 150, 150));
+        btnCancel.setForeground(Color.WHITE);
+        btnCancel.setFocusPainted(false);
+        btnCancel.setPreferredSize(buttonSize);
+        btnCancel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        btnCancel.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                btnCancel.setBackground(new Color(170, 170, 170));
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) { // <-- CORRECCIÓN AQUÍ
+                btnCancel.setBackground(new Color(150, 150, 150));
+            }
+        });
+    }
+
     private void init() {
         switch (this.cud) {
             case CREATE:
-                setTitle("Crear Carrera");
+                setTitle("Crear Nueva Carrera");
                 btnOk.setText("Guardar");
                 break;
             case UPDATE:
-                setTitle("Modificar Carrera");
-                btnOk.setText("Guardar");
+                setTitle("Modificar Carrera Existente");
+                btnOk.setText("Actualizar");
                 break;
             case DELETE:
                 setTitle("Eliminar Carrera");
@@ -57,47 +110,39 @@ public class CareerWriteForm extends JDialog {
                 break;
         }
 
-        // Llena el campo de texto con los datos actuales de la carrera
         setValuesControls(this.en);
     }
 
-    // Asigna los valores del objeto Career a los campos visuales
     private void setValuesControls(Career career) {
         txtName.setText(career.getCareerName());
 
-        // Si se va a eliminar, el campo no debe ser editable
         if (this.cud == CUD.DELETE) {
             txtName.setEditable(false);
+            txtName.setBackground(new Color(230, 230, 230));
         }
     }
 
-    // Recupera los valores ingresados por el usuario y los valida
     private boolean getValuesControls() {
         boolean res = false;
 
-        // Validación: el nombre no puede estar vacío
         if (txtName.getText().trim().isEmpty()) {
             return res;
         }
-        // Validación adicional: en UPDATE y DELETE debe existir el ID de la carrera
         else if (this.cud != CUD.CREATE && this.en.getCareerId() == 0) {
             return res;
         }
 
-        // Si pasa las validaciones, se asigna el valor al objeto Career
         res = true;
         this.en.setCareerName(txtName.getText());
         return res;
     }
 
-    // Método que ejecuta la operación (crear, actualizar o eliminar)
     private void ok() {
         try {
-            boolean res = getValuesControls(); // Validación y asignación de datos
+            boolean res = getValuesControls();
             if (res) {
                 boolean r = false;
 
-                // Ejecuta la acción correspondiente en el DAO
                 switch (this.cud) {
                     case CREATE:
                         Career career = careerDAO.create(this.en);
@@ -111,27 +156,26 @@ public class CareerWriteForm extends JDialog {
                         break;
                 }
 
-                // Informa el resultado al usuario
                 if (r) {
-                    JOptionPane.showMessageDialog(null,
-                            "Transacción realizada exitosamente",
+                    JOptionPane.showMessageDialog(this,
+                            "Operación realizada exitosamente.",
                             "Información", JOptionPane.INFORMATION_MESSAGE);
-                    this.dispose(); // Cierra el formulario
+                    this.dispose();
                 } else {
-                    JOptionPane.showMessageDialog(null,
-                            "No se logró realizar ninguna acción",
-                            "ERROR", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this,
+                            "No se logró realizar la operación.",
+                            "Error de Operación", JOptionPane.ERROR_MESSAGE);
                 }
             } else {
-                JOptionPane.showMessageDialog(null,
-                        "Los campos con * son obligatorios",
-                        "Validación", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        "Por favor, complete el campo Nombre de Carrera.",
+                        "Validación de Campos", JOptionPane.WARNING_MESSAGE);
             }
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(null,
-                    ex.getMessage(),
-                    "ERROR", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this,
+                    "Ocurrió un error: " + ex.getMessage(),
+                    "Error del Sistema", JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
         }
     }
 }
-

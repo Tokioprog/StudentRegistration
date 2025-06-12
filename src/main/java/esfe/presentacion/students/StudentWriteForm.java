@@ -5,224 +5,430 @@ import esfe.dominio.Students;
 import esfe.persistencia.CareerDAO;
 import esfe.persistencia.StudentDAO;
 import esfe.presentacion.users.MainForm;
-import esfe.utils.CBOption; // Asegúrate de tener tu clase CBOption correcta aquí
+import esfe.utils.CBOption;
 import esfe.utils.CUD;
 
 import javax.swing.*;
 import java.util.ArrayList;
+import java.awt.*; // Importación para Color, Font, Dimension, y GridBagLayout, GridBagConstraints
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 
+/**
+ * Formulario Swing para crear, modificar o eliminar un estudiante.
+ * Se comporta según el tipo de operación definido por el enum CUD.
+ */
 public class StudentWriteForm extends JDialog {
-    private JPanel mainPanel;
+    // Componentes visuales (mantengo las declaraciones existentes)
+    private JPanel mainPanel; // Este panel se configurará con GridBagLayout
     private JTextField txtCode;
     private JTextField txtFullName;
     private JTextField txtAge;
-    private JComboBox<CBOption> cbCareer; // Especifica el tipo genérico para el JComboBox
+    private JComboBox<CBOption> cbCareer;
     private JButton btnOk;
     private JButton btnCancel;
 
+    // Dependencias
     private CareerDAO careerDAO;
     private StudentDAO studentDAO;
     private MainForm mainForm;
-    private CUD cud;
-    private Students currentStudent; // Renombro 'en' a 'currentStudent' para mayor claridad
 
+    // Lógica de control
+    private CUD cud; // Tipo de operación: CREATE, UPDATE, DELETE
+    private Students currentStudent; // Estudiante actual (nuevo o a editar/eliminar)
+
+    /**
+     * Constructor del formulario.
+     * @param mainForm Referencia al formulario principal
+     * @param cud Tipo de operación a realizar (CREATE, UPDATE, DELETE)
+     * @param student Objeto estudiante que será creado, editado o eliminado
+     */
     public StudentWriteForm(MainForm mainForm, CUD cud, Students student) {
         this.cud = cud;
         this.currentStudent = student;
         this.mainForm = mainForm;
+
+        // Inicialización de DAOs
         careerDAO = new CareerDAO();
         studentDAO = new StudentDAO();
-        setContentPane(mainPanel);
+
+        // Configuración del formulario
+        // NO LLAMAMOS setContentPane(mainPanel) DIRECTAMENTE AQUÍ
+        // mainPanel será construido y poblado en configurePanelLayout()
         setModal(true);
-        // Es crucial llamar a init() aquí para cargar el ComboBox y configurar la UI antes de hacerla visible
-        init();
-        pack();
+        setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        setSize(450, 380); // Un poco más alto para el layout
+        setResizable(false);
         setLocationRelativeTo(mainForm);
 
-        // Listener para el botón Cancelar
+        // --- Configuración del Layout y Componentes ---
+        configurePanelLayout(); // Nuevo método para configurar el mainPanel y sus componentes
+        setContentPane(mainPanel); // Ahora establecemos el panel configurado
+
+        init(); // Inicializa la interfaz según el tipo de operación (títulos, datos, etc.)
+
+        // --- APLICACIÓN DE ESTILOS Y MEJORAS VISUALES ---
+        applyVisualEnhancements();
+
+        // Botón Cancelar
         btnCancel.addActionListener(s -> this.dispose());
-        // Listener para el botón OK/Guardar/Eliminar
+
+        // Botón OK (Guardar o Eliminar)
         btnOk.addActionListener(s -> ok());
     }
 
-    private void init() {
-        // PASO 1: Cargar las carreras en el JComboBox. Esto debe hacerse antes de intentar seleccionar una.
-        loadCareersIntoComboBox();
+    /**
+     * Configura el mainPanel con GridBagLayout y añade todos los componentes a él.
+     */
+    private void configurePanelLayout() {
+        mainPanel = new JPanel(new GridBagLayout()); // Inicializa mainPanel con GridBagLayout
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(8, 8, 8, 8); // Padding alrededor de cada componente
+        gbc.fill = GridBagConstraints.HORIZONTAL; // Los componentes se expandirán horizontalmente
 
-        // PASO 2: Configurar el formulario según la operación (CREATE, UPDATE, DELETE)
+        // --- Añadir JLabels y JTextFields ---
+        // Código
+        gbc.gridx = 0; // Columna 0
+        gbc.gridy = 0; // Fila 0
+        gbc.anchor = GridBagConstraints.WEST; // Alinear a la izquierda
+        mainPanel.add(new JLabel("Código:"), gbc);
+
+        gbc.gridx = 1; // Columna 1
+        gbc.gridy = 0; // Fila 0
+        gbc.weightx = 1.0; // Permitir que el campo se expanda
+        txtCode = new JTextField(); // Asegúrate de inicializar los componentes aquí
+        mainPanel.add(txtCode, gbc);
+        gbc.weightx = 0; // Resetear weightx para las etiquetas
+
+        // Nombre Completo
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.anchor = GridBagConstraints.WEST;
+        mainPanel.add(new JLabel("Nombre Completo:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 1;
+        gbc.weightx = 1.0;
+        txtFullName = new JTextField();
+        mainPanel.add(txtFullName, gbc);
+        gbc.weightx = 0;
+
+        // Edad
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.anchor = GridBagConstraints.WEST;
+        mainPanel.add(new JLabel("Edad:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 2;
+        gbc.weightx = 1.0;
+        txtAge = new JTextField();
+        mainPanel.add(txtAge, gbc);
+        gbc.weightx = 0;
+
+        // Carrera
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.anchor = GridBagConstraints.WEST;
+        mainPanel.add(new JLabel("Carrera:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 3;
+        gbc.weightx = 1.0;
+        cbCareer = new JComboBox<>(); // Asegúrate de inicializar aquí
+        mainPanel.add(cbCareer, gbc);
+        gbc.weightx = 0;
+
+        // --- Añadir Botones ---
+        gbc.gridx = 0;
+        gbc.gridy = 4; // Nueva fila para los botones
+        gbc.gridwidth = 2; // Ocupar ambas columnas
+        gbc.anchor = GridBagConstraints.CENTER; // Centrar los botones
+        gbc.fill = GridBagConstraints.NONE; // No expandir los botones
+        gbc.insets = new Insets(20, 8, 8, 8); // Más espacio superior para los botones
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0)); // Panel para centrar los botones
+        btnOk = new JButton(); // Inicializar botones
+        btnCancel = new JButton();
+        buttonPanel.add(btnOk);
+        buttonPanel.add(btnCancel);
+        mainPanel.add(buttonPanel, gbc);
+    }
+
+
+    // Nuevo método para aplicar todas las mejoras visuales
+    private void applyVisualEnhancements() {
+        // Estilos del Panel Principal (ya configurado en configurePanelLayout)
+        mainPanel.setBackground(new Color(245, 245, 250)); // Fondo muy claro
+        mainPanel.setBorder(new EmptyBorder(25, 30, 25, 30)); // Más padding alrededor del contenido total
+
+        // Estilos de los JLabels
+        Font labelFont = new Font("Segoe UI", Font.BOLD, 14);
+        Color labelColor = new Color(70, 70, 70);
+        // Iterar sobre los componentes del mainPanel para encontrar los JLabels
+        for (Component comp : mainPanel.getComponents()) {
+            if (comp instanceof JLabel) {
+                JLabel label = (JLabel) comp;
+                label.setFont(labelFont);
+                label.setForeground(labelColor);
+            }
+        }
+
+
+        // Estilos de los Campos de Texto y ComboBox
+        Font inputFont = new Font("Arial", Font.PLAIN, 16);
+        Color borderColor = new Color(150, 150, 200);
+        int borderWidth = 1;
+        Dimension inputSize = new Dimension(280, 38); // Tamaño preferido para campos
+
+        // Estilos de txtCode
+        txtCode.setFont(inputFont);
+        txtCode.setBorder(new LineBorder(borderColor, borderWidth, true));
+        txtCode.setPreferredSize(inputSize);
+        txtCode.setBackground(Color.WHITE);
+
+        // Estilos de txtFullName
+        txtFullName.setFont(inputFont);
+        txtFullName.setBorder(new LineBorder(borderColor, borderWidth, true));
+        txtFullName.setPreferredSize(inputSize);
+        txtFullName.setBackground(Color.WHITE);
+
+        // Estilos de txtAge
+        txtAge.setFont(inputFont);
+        txtAge.setBorder(new LineBorder(borderColor, borderWidth, true));
+        txtAge.setPreferredSize(inputSize);
+        txtAge.setBackground(Color.WHITE);
+
+        // Estilos de cbCareer
+        cbCareer.setFont(inputFont);
+        cbCareer.setBackground(Color.WHITE);
+        cbCareer.setBorder(new LineBorder(borderColor, borderWidth, true));
+        cbCareer.setPreferredSize(inputSize);
+
+        // Estilos de los Botones (OK y Cancelar)
+        Font buttonFont = new Font("Segoe UI", Font.BOLD, 15);
+        Dimension buttonSize = new Dimension(120, 40);
+
+        btnOk.setFont(buttonFont);
+        btnOk.setForeground(Color.WHITE);
+        btnOk.setFocusPainted(false);
+        btnOk.setPreferredSize(buttonSize);
+        btnOk.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+
+        // Colores y hover específicos para btnOk (depende del CUD)
+        if (this.cud == CUD.DELETE) {
+            btnOk.setBackground(new Color(200, 70, 70)); // Rojo para eliminar
+            btnOk.addMouseListener(new java.awt.event.MouseAdapter() {
+                public void mouseEntered(java.awt.event.MouseEvent evt) { btnOk.setBackground(new Color(220, 90, 90)); }
+                public void mouseExited(java.awt.event.MouseEvent evt) { btnOk.setBackground(new Color(200, 70, 70)); }
+            });
+        } else {
+            btnOk.setBackground(new Color(60, 179, 113)); // Verde para guardar/actualizar
+            btnOk.addMouseListener(new java.awt.event.MouseAdapter() {
+                public void mouseEntered(java.awt.event.MouseEvent evt) { btnOk.setBackground(new Color(80, 199, 133)); }
+                public void mouseExited(java.awt.event.MouseEvent evt) { btnOk.setBackground(new Color(60, 179, 113)); }
+            });
+        }
+
+        btnCancel.setFont(buttonFont);
+        btnCancel.setBackground(new Color(150, 150, 150)); // Gris para cancelar
+        btnCancel.setForeground(Color.WHITE);
+        btnCancel.setFocusPainted(false);
+        btnCancel.setPreferredSize(buttonSize);
+        btnCancel.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        // Efecto hover para el botón Cancelar
+        btnCancel.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                btnCancel.setBackground(new Color(170, 170, 170));
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                btnCancel.setBackground(new Color(150, 150, 150));
+            }
+        });
+    }
+
+    /**
+     * Inicializa el formulario según el tipo de operación.
+     */
+    private void init() {
+        loadCareersIntoComboBox(); // Carga las carreras en el combo box
+
+        // Configura el título y comportamiento según la operación
         switch (this.cud) {
             case CREATE:
-                setTitle("Crear Estudiante");
+                setTitle("Crear Nuevo Estudiante"); // Título más descriptivo
                 btnOk.setText("Guardar");
-                // Si es CREATE, asegúrate de que el ComboBox tenga una opción seleccionada (ej. la primera)
-                if (cbCareer.getItemCount() > 0) {
-                    cbCareer.setSelectedIndex(0);
-                }
+                if (cbCareer.getItemCount() > 0) cbCareer.setSelectedIndex(0);
                 break;
+
             case UPDATE:
                 setTitle("Modificar Estudiante");
-                btnOk.setText("Guardar");
-                // Carga los datos del estudiante existente en los controles para su edición
+                btnOk.setText("Actualizar"); // Texto más claro
                 setValuesControls(this.currentStudent);
                 break;
+
             case DELETE:
                 setTitle("Eliminar Estudiante");
                 btnOk.setText("Eliminar");
-                // Carga los datos para que el usuario los vea antes de eliminar
                 setValuesControls(this.currentStudent);
-                // Deshabilita los controles para evitar modificaciones antes de eliminar
-                disableControls();
+                disableControls(); // Deshabilita los controles para evitar modificaciones
                 break;
         }
     }
 
-    // Método para cargar las carreras desde la base de datos en el JComboBox
+    /**
+     * Carga las carreras desde la base de datos en el combo box.
+     */
     private void loadCareersIntoComboBox() {
         try {
-            // Obtiene todas las carreras de la base de datos
             ArrayList<Career> careers = careerDAO.searchByName("");
-            // Crea un nuevo modelo para el JComboBox
             DefaultComboBoxModel<CBOption> model = new DefaultComboBoxModel<>();
 
-            // Opcional: Añadir una opción por defecto al inicio, si no quieres que se seleccione automáticamente la primera
-            // model.addElement(new CBOption("-- Seleccione una Carrera --", 0)); // Asumiendo que 0 no es un careerId válido
-
-            // Itera sobre las carreras obtenidas y las añade al modelo del JComboBox como objetos CBOption
             for (Career career : careers) {
-                model.addElement(new CBOption(career)); // Usa el constructor de CBOption que recibe un objeto Career
+                model.addElement(new CBOption(career)); // CBOption encapsula Career
             }
-            cbCareer.setModel(model); // Asigna el modelo al JComboBox
+            cbCareer.setModel(model);
         } catch (Exception ex) {
-            JOptionPane.showMessageDialog(null,
-                    "Error al cargar carreras: " + ex.getMessage() + "\n" +
-                            "Asegúrese de que la base de datos esté accesible y tenga carreras.", // Mensaje más útil
-                    "ERROR DE CARGA", JOptionPane.ERROR_MESSAGE);
-            // Deshabilita el botón OK y el ComboBox si no se pueden cargar las carreras
+            JOptionPane.showMessageDialog(this,
+                    "Error al cargar carreras: " + ex.getMessage() + "\nLas carreras no se pudieron cargar.",
+                    "Error de Carga de Datos", JOptionPane.ERROR_MESSAGE);
             btnOk.setEnabled(false);
             cbCareer.setEnabled(false);
         }
     }
 
-    // Método para establecer los valores de los controles basándose en el objeto Students
+    /**
+     * Establece los valores en los controles del formulario desde el objeto Students.
+     */
     private void setValuesControls(Students student) {
         txtCode.setText(student.getCode());
         txtFullName.setText(student.getFullName());
         txtAge.setText(String.valueOf(student.getAge()));
 
-        // Seleccionar la carrera correcta en el JComboBox
+        // Selecciona la carrera correspondiente en el combo box
         if (student.getCareer() != null && student.getCareer().getCareerId() > 0) {
-            // Crea un objeto CBOption temporal para la carrera del estudiante.
-            // Gracias al método equals() correctamente implementado en CBOption,
-            // setSelectedItem() encontrará y seleccionará la opción correspondiente en el ComboBox.
-            cbCareer.setSelectedItem(new CBOption(student.getCareer()));
-        } else {
-            // Si el estudiante no tiene carrera o es un ID inválido, seleccionar el primer elemento
-            if (cbCareer.getItemCount() > 0) {
-                cbCareer.setSelectedIndex(0);
+            // Recorre los items del ComboBox para encontrar la opción correcta
+            for (int i = 0; i < cbCareer.getItemCount(); i++) {
+                CBOption option = cbCareer.getItemAt(i);
+                if (option.getValue() == student.getCareer().getCareerId()) {
+                    cbCareer.setSelectedItem(option);
+                    break;
+                }
             }
+        } else if (cbCareer.getItemCount() > 0) {
+            cbCareer.setSelectedIndex(0);
         }
     }
 
-    // Método para deshabilitar los controles del formulario (útil para la operación DELETE)
+    /**
+     * Deshabilita los controles del formulario (útil para DELETE).
+     */
     private void disableControls() {
         txtCode.setEditable(false);
         txtFullName.setEditable(false);
         txtAge.setEditable(false);
         cbCareer.setEnabled(false);
+        // Dar un feedback visual de que el campo está deshabilitado
+        txtCode.setBackground(new Color(230, 230, 230));
+        txtFullName.setBackground(new Color(230, 230, 230));
+        txtAge.setBackground(new Color(230, 230, 230));
+        cbCareer.setBackground(new Color(230, 230, 230));
     }
 
-    // Método para obtener los valores de los controles del formulario y realizar validaciones
+    /**
+     * Obtiene los valores desde los controles, los valida y los asigna a currentStudent.
+     * @return true si los datos son válidos; false en caso contrario.
+     */
     private boolean getValuesControls() {
-        // Validación de campos de texto no vacíos
         if (txtCode.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(null, "El campo 'Código' es obligatorio.", "Validación", JOptionPane.WARNING_MESSAGE);
-            return false;
-        }
-        if (txtFullName.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(null, "El campo 'Nombre Completo' es obligatorio.", "Validación", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "El campo 'Código' es obligatorio.", "Validación de Campos", JOptionPane.WARNING_MESSAGE);
             return false;
         }
 
-        // Validación y parseo de la edad
+        if (txtFullName.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "El campo 'Nombre Completo' es obligatorio.", "Validación de Campos", JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
+
         int age;
         try {
             age = Integer.parseInt(txtAge.getText().trim());
             if (age <= 0) {
-                JOptionPane.showMessageDialog(null, "La edad debe ser un número positivo.", "Validación", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "La edad debe ser un número positivo.", "Validación de Campos", JOptionPane.WARNING_MESSAGE);
                 return false;
             }
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(null, "La edad debe ser un número válido.", "Validación", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "La edad debe ser un número válido.", "Validación de Campos", JOptionPane.WARNING_MESSAGE);
             return false;
         }
 
-        // Validación de la selección de carrera en el JComboBox
         CBOption selectedOption = (CBOption) cbCareer.getSelectedItem();
-        // Asumiendo que un valor de 0 en CBOption.getValue() indica que no hay una selección válida
         if (selectedOption == null || selectedOption.getValue() == 0) {
-            JOptionPane.showMessageDialog(null, "Debe seleccionar una Carrera.", "Validación", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Debe seleccionar una Carrera.", "Validación de Campos", JOptionPane.WARNING_MESSAGE);
             return false;
         }
 
-        // Si todas las validaciones pasan, se procede a poblar el objeto currentStudent
+        // Asignación a currentStudent
         this.currentStudent.setCode(txtCode.getText().trim());
         this.currentStudent.setFullName(txtFullName.getText().trim());
         this.currentStudent.setAge(age);
 
-        // Se crea una nueva instancia de Career con el ID seleccionado y se asigna al estudiante
         Career selectedCareer = new Career();
         selectedCareer.setCareerId(selectedOption.getValue());
-        // Opcional: Si necesitas el nombre de la carrera para alguna lógica adicional, puedes asignarlo
-        // selectedCareer.setCareerName(selectedOption.getDisplayText());
         this.currentStudent.setCareer(selectedCareer);
 
-        return true; // Retorna true si todas las validaciones y el llenado del objeto fueron exitosos
+        return true;
     }
 
-    // Método que se ejecuta al presionar el botón "OK" (Guardar/Eliminar)
+    /**
+     * Ejecuta la acción según el tipo de operación (CREATE, UPDATE, DELETE).
+     */
     private void ok() {
         try {
-            // Primero, valida los datos del formulario y actualiza el objeto currentStudent
             if (getValuesControls()) {
                 boolean success = false;
                 String message = "";
 
-                // Ejecuta la operación CUD correspondiente
                 switch (this.cud) {
                     case CREATE:
                         Students createdStudent = studentDAO.create(this.currentStudent);
                         if (createdStudent != null && createdStudent.getStudentId() > 0) {
                             success = true;
                             message = "Estudiante creado exitosamente.";
+                        } else {
+                            message = "No se pudo crear el estudiante. Verifique los datos.";
                         }
                         break;
+
                     case UPDATE:
                         success = studentDAO.update(this.currentStudent);
                         message = "Estudiante actualizado exitosamente.";
+                        if (!success) {
+                            message = "No se pudo actualizar el estudiante.";
+                        }
                         break;
+
                     case DELETE:
                         success = studentDAO.delete(this.currentStudent);
                         message = "Estudiante eliminado exitosamente.";
+                        if (!success) {
+                            message = "No se pudo eliminar el estudiante.";
+                        }
                         break;
                 }
 
-                // Muestra el resultado de la operación
                 if (success) {
-                    JOptionPane.showMessageDialog(null, message, "Información", JOptionPane.INFORMATION_MESSAGE);
-                    this.dispose(); // Cierra el formulario después de una operación exitosa
+                    JOptionPane.showMessageDialog(this, message, "Operación Exitosa", JOptionPane.INFORMATION_MESSAGE);
+                    this.dispose();
                 } else {
-                    JOptionPane.showMessageDialog(null,
-                            "No se logró realizar ninguna acción o la operación falló.",
-                            "ERROR", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, message, "Error de Operación", JOptionPane.ERROR_MESSAGE);
                 }
             }
-            // Si getValuesControls() retorna false, ya habrá mostrado un JOptionPane con el mensaje de error.
         } catch (Exception ex) {
-            // Captura y muestra cualquier excepción que ocurra durante el proceso
-            JOptionPane.showMessageDialog(null,
+            JOptionPane.showMessageDialog(this,
                     "Error al procesar la operación: " + ex.getMessage(),
-                    "ERROR", JOptionPane.ERROR_MESSAGE);
-            ex.printStackTrace(); // Imprime la pila de llamadas para facilitar la depuración
+                    "Error del Sistema", JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
         }
     }
 }
